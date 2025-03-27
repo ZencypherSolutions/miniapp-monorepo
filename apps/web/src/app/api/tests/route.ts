@@ -3,6 +3,8 @@ import { jwtVerify } from "jose";
 import type { JWTPayload } from "jose";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import type { Language } from "@/i18n";
+import type { NextRequest } from "next/server";
 
 interface TokenPayload extends JWTPayload {
   address?: string;
@@ -146,10 +148,13 @@ if (!JWT_SECRET) {
 }
 const secret = new TextEncoder().encode(JWT_SECRET);
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const xata = getXataClient();
     const token = cookies().get("session")?.value;
+    
+    // Get language from query param or default to English
+    const language = (request.nextUrl.searchParams.get("lang") || "en") as Language;
 
     if (!token) {
       const response: TestResponse = { error: "Unauthorized" };
@@ -175,15 +180,43 @@ export async function GET() {
       }
 
       // Fetch all tests with total_questions
-      const tests = await xata.db.Tests.getAll({
-        columns: [
-          "test_id",
-          "test_name",
-          "test_description",
-          "total_questions",
-        ],
-        sort: { test_id: "asc" },
-      });
+      let tests;
+      
+      // If language is English, fetch directly from Tests table
+      if (language === 'en') {
+        tests = await xata.db.Tests.getAll({
+          columns: [
+            "test_id",
+            "test_name",
+            "test_description",
+            "total_questions",
+          ],
+          sort: { test_id: "asc" },
+        });
+      } else {
+        // For other languages, fetch tests with translations
+        const testsWithTranslations = await xata.db.TestsTranslate
+          .filter({
+            "language.short": language
+          })
+          .select([
+            "test.test_id",
+            "test.total_questions",
+            "translated_name",
+            "translated_description",
+          ])
+          .sort("test.test_id", "asc")
+          .getAll();
+          
+        // Transform to match expected format
+        tests = testsWithTranslations.map(tt => ({
+          test_id: tt.test?.test_id,
+          test_name: tt.translated_name,
+          test_description: tt.translated_description,
+          total_questions: tt.test?.total_questions,
+          xata_id: tt.test?.xata_id,
+        }));
+      }
 
       // Fetch user progress for all tests
       const allProgress = await xata.db.UserTestProgress.filter({

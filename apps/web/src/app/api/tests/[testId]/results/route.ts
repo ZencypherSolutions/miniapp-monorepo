@@ -26,6 +26,33 @@ interface ResultResponse {
   error?: string;
 }
 
+interface UserScores {
+  dipl: number;
+  econ: number;
+  govt: number;
+  scty: number;
+}
+
+// Define the calculateSimilarity function locally
+function calculateSimilarity(
+  userScores: UserScores,
+  ideologyScores: UserScores,
+): number {
+  // Calculate the Euclidean distance between two score vectors
+  const diplDiff = userScores.dipl - ideologyScores.dipl;
+  const econDiff = userScores.econ - ideologyScores.econ;
+  const govtDiff = userScores.govt - ideologyScores.govt;
+  const sctyDiff = userScores.scty - ideologyScores.scty;
+
+  // Return the Euclidean distance (lower means more similar)
+  return Math.sqrt(
+    diplDiff * diplDiff +
+    econDiff * econDiff +
+    govtDiff * govtDiff +
+    sctyDiff * sctyDiff
+  );
+}
+
 /**
  * @swagger
  * /api/tests/{testId}/results:
@@ -226,6 +253,68 @@ export async function GET(
         status: "completed",
         completed_at: new Date(),
       });
+      
+      // Calculate and save the user's ideology
+      console.log("Calculating and saving ideology for user after test completion");
+      try {
+        // Prepare the user's scores
+        const userScores = {
+          econ: progress.score.econ,
+          dipl: progress.score.dipl,
+          govt: progress.score.govt,
+          scty: progress.score.scty
+        };
+        
+        // Get all ideologies
+        console.log('[Test Results API] Fetching all ideologies from database');
+        const ideologies = await xata.db.Ideologies.getAll();
+
+        if (!ideologies.length) {
+          console.log('[Test Results API] No ideologies found in database');
+        } else {
+          console.log(`[Test Results API] Found ${ideologies.length} ideologies in database`);
+
+          // Find best matching ideology
+          let bestMatch = ideologies[0];
+          let bestSimilarity = calculateSimilarity(
+            userScores,
+            ideologies[0].scores as typeof userScores,
+          );
+
+          for (const ideology of ideologies) {
+            const similarity = calculateSimilarity(
+              userScores,
+              ideology.scores as typeof userScores,
+            );
+            if (similarity < bestSimilarity) {
+              bestSimilarity = similarity;
+              bestMatch = ideology;
+            }
+          }
+
+          console.log(`[Test Results API] Best match found: ${bestMatch.name} with similarity: ${bestSimilarity}`);
+
+          // Get latest ideology_user_id
+          const latestIdeology = await xata.db.IdeologyPerUser.sort(
+            "ideology_user_id",
+            "desc",
+          ).getFirst();
+          const nextIdeologyId = (latestIdeology?.ideology_user_id || 0) + 1;
+
+          // Store the English ideology name in the database
+          console.log(`[Test Results API] Storing ideology in database with ID: ${nextIdeologyId}`);
+          await xata.db.IdeologyPerUser.create({
+            user: user.xata_id,
+            ideology: bestMatch.xata_id,
+            ideology_user_id: nextIdeologyId,
+          });
+
+          console.log(`[Test Results API] Successfully stored ideology: ${bestMatch.name}`);
+        }
+      } catch (ideologyError) {
+        console.error("Error calculating ideology:", ideologyError);
+        // Continue execution even if ideology calculation fails
+      }
 
       const response: ResultResponse = { results };
       return NextResponse.json(response);
@@ -407,6 +496,68 @@ export async function POST(
         status: "completed",
         completed_at: new Date(),
       });
+
+      // Calculate and save the user's ideology
+      console.log("Calculating and saving ideology for user after test completion");
+      try {
+        // Prepare the user's scores
+        const userScores = {
+          econ: progress.score.econ,
+          dipl: progress.score.dipl,
+          govt: progress.score.govt,
+          scty: progress.score.scty
+        };
+        
+        // Get all ideologies
+        console.log('[Test Results API] Fetching all ideologies from database');
+        const ideologies = await xata.db.Ideologies.getAll();
+
+        if (!ideologies.length) {
+          console.log('[Test Results API] No ideologies found in database');
+        } else {
+          console.log(`[Test Results API] Found ${ideologies.length} ideologies in database`);
+
+          // Find best matching ideology
+          let bestMatch = ideologies[0];
+          let bestSimilarity = calculateSimilarity(
+            userScores,
+            ideologies[0].scores as typeof userScores,
+          );
+
+          for (const ideology of ideologies) {
+            const similarity = calculateSimilarity(
+              userScores,
+              ideology.scores as typeof userScores,
+            );
+            if (similarity < bestSimilarity) {
+              bestSimilarity = similarity;
+              bestMatch = ideology;
+            }
+          }
+
+          console.log(`[Test Results API] Best match found: ${bestMatch.name} with similarity: ${bestSimilarity}`);
+
+          // Get latest ideology_user_id
+          const latestIdeology = await xata.db.IdeologyPerUser.sort(
+            "ideology_user_id",
+            "desc",
+          ).getFirst();
+          const nextIdeologyId = (latestIdeology?.ideology_user_id || 0) + 1;
+
+          // Store the English ideology name in the database
+          console.log(`[Test Results API] Storing ideology in database with ID: ${nextIdeologyId}`);
+          await xata.db.IdeologyPerUser.create({
+            user: user.xata_id,
+            ideology: bestMatch.xata_id,
+            ideology_user_id: nextIdeologyId,
+          });
+
+          console.log(`[Test Results API] Successfully stored ideology: ${bestMatch.name}`);
+        }
+      } catch (ideologyError) {
+        console.error("Error calculating ideology:", ideologyError);
+        // Continue execution even if ideology calculation fails
+      }
 
       const response: ResultResponse = { results };
       return NextResponse.json(response);

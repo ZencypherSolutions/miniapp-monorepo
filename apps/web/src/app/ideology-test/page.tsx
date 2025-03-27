@@ -1,18 +1,35 @@
 "use client";
 
-import type { Question } from "@/app/types";
+import type { Question as AppQuestion } from "@/app/types";
 import { FilledButton } from "@/components/ui/buttons/FilledButton";
 import { LoadingSpinner, ProgressBar } from "@/components/ui/feedback";
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/i18n";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { Question as ApiQuestion } from "@/utils/translations";
+
+// Convert API Question type to App Question type
+function convertQuestion(apiQuestion: ApiQuestion): AppQuestion {
+  return {
+    id: apiQuestion.id,
+    question: apiQuestion.question,
+    effect: apiQuestion.effect as {
+      econ: number;
+      dipl: number;
+      govt: number;
+      scty: number;
+    },
+  };
+}
 
 export default function IdeologyTest() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const testId = searchParams.get("testId") || "1";
   const { t, tWithVars } = useTranslation();
+  const { fetchQuestions } = useLanguage();
 
   const answerOptions = [
     { label: t('ideologyTest.options.stronglyAgree'), multiplier: 1.0 },
@@ -23,7 +40,7 @@ export default function IdeologyTest() {
   ];
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<AppQuestion[]>([]);
   const [scores, setScores] = useState({ econ: 0, dipl: 0, govt: 0, scty: 0 });
   const [userAnswers, setUserAnswers] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -33,7 +50,6 @@ export default function IdeologyTest() {
   const [hasUnsavedChanges] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
-  const [_isShareModalOpen, _setIsShareModalOpen] = useState(false);
 
   const totalQuestions = questions.length;
   const progress = ((currentQuestion + 1) / totalQuestions) * 100;
@@ -50,7 +66,7 @@ export default function IdeologyTest() {
   }, [error]);
 
   useEffect(() => {
-    const loadProgress = async (loadedQuestions: Question[]) => {
+    const loadProgress = async (loadedQuestions: AppQuestion[]) => {
       try {
         const response = await fetch(`/api/tests/${testId}/progress`);
         if (response.ok) {
@@ -84,23 +100,28 @@ export default function IdeologyTest() {
       }
     };
 
-    const fetchQuestions = async () => {
+    const fetchQuestionData = async () => {
       try {
-        const response = await fetch(`/api/tests/${testId}/questions`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch questions");
+        // Use the language context to fetch questions
+        const parsedTestId = parseInt(testId, 10);
+        const questionsResponse = await fetchQuestions(parsedTestId);
+        
+        if (!questionsResponse.questions || questionsResponse.questions.length === 0) {
+          throw new Error(questionsResponse.error || "Failed to fetch questions");
         }
-        const data = await response.json();
-        setQuestions(data.questions);
-        await loadProgress(data.questions);
+        
+        // Convert API questions to app questions with the correct effect type
+        const appQuestions = questionsResponse.questions.map(convertQuestion);
+        setQuestions(appQuestions);
+        await loadProgress(appQuestions);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
         setLoading(false);
       }
     };
 
-    fetchQuestions();
-  }, [testId]);
+    fetchQuestionData();
+  }, [testId, fetchQuestions]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -208,32 +229,48 @@ export default function IdeologyTest() {
 
       // 2. If no insights exist - create new ones
       // 3. If answers changed - rewrite existing insights
-      const resultsResponse = await fetch(`/api/tests/${testId}/results`, {
-        method: hasExistingInsights ? "PUT" : "POST", // Use PUT to update existing insights
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ forceUpdate: hasAnswersChanged }),
-      });
+      try {
+        const resultsResponse = await fetch(`/api/tests/${testId}/results`, {
+          method: hasExistingInsights ? "PUT" : "POST", // Use PUT to update existing insights
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ forceUpdate: hasAnswersChanged }),
+        });
 
-      if (!resultsResponse.ok) {
-        throw new Error("Failed to save final results");
+        if (!resultsResponse.ok) {
+          const errorText = await resultsResponse.text();
+          console.error("Failed to save final results:", {
+            status: resultsResponse.status,
+            statusText: resultsResponse.statusText,
+            errorText
+          });
+          throw new Error(`Failed to save final results: ${resultsResponse.status} ${errorText}`);
+        }
+
+        // Calculate ideology based on final scores
+        const ideologyResponse = await fetch("/api/ideology", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(roundedScores),
+        });
+
+        if (!ideologyResponse.ok) {
+          console.error("Failed to calculate ideology:", { 
+            status: ideologyResponse.status,
+            statusText: ideologyResponse.statusText 
+          });
+          // Continue to results page even if ideology calculation fails
+        }
+
+        router.push(`/insights?testId=${testId}`);
+      } catch (error) {
+        console.error("Error processing results:", error);
+        setError("Error saving results. Please try again.");
+        setIsSubmitting(false);
       }
-
-      // Calculate ideology based on final scores
-      const ideologyResponse = await fetch("/api/ideology", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(roundedScores),
-      });
-
-      if (!ideologyResponse.ok) {
-        throw new Error("Failed to calculate ideology");
-      }
-
-      router.push(`/insights?testId=${testId}`);
     } catch (error) {
       console.error("Error ending test:", error);
       setIsSubmitting(false);

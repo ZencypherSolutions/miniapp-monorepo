@@ -1,4 +1,5 @@
 import { getXataClient } from "@/lib/database/xata";
+import type { Language } from "@/i18n";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -14,11 +15,14 @@ interface QuestionResponse {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { testId: string } },
 ) {
   try {
     const testId = Number.parseInt(params.testId, 10);
+    
+    // Get language from query param or default to English
+    const language = (request.nextUrl.searchParams.get("lang") || "en") as Language;
 
     // Validate the test ID
     if (Number.isNaN(testId) || testId <= 0) {
@@ -28,25 +32,70 @@ export async function GET(
 
     const xata = getXataClient();
 
-    // Fetch all questions for the specified test
-    const questions = await xata.db.Questions.filter({ "test.test_id": testId }) // Filter by the test ID
-      .select(["question_id", "question", "effect", "sort_order"]) // Select necessary fields
-      .sort("sort_order", "asc") // Sort by sort_order
+    // If language is English, fetch directly from Questions table
+    if (language === 'en') {
+      // Fetch all questions for the specified test
+      const questions = await xata.db.Questions.filter({ "test.test_id": testId })
+        .select(["question_id", "question", "effect", "sort_order"])
+        .sort("sort_order", "asc")
+        .getAll();
+
+      // Check if questions were found
+      if (!questions || questions.length === 0) {
+        const response: QuestionResponse = {
+          error: "No questions found for this test",
+        };
+        return NextResponse.json(response, { status: 404 });
+      }
+
+      // Transform the questions to match the expected format
+      const formattedQuestions = questions.map((q) => ({
+        id: q.question_id,
+        question: q.question,
+        effect: q.effect, // Use the effect values from the database
+      }));
+
+      const response: QuestionResponse = { questions: formattedQuestions };
+      return NextResponse.json(response);
+    }
+    
+    // For other languages, join with QuestionsTranslate
+    const questionsWithTranslations = await xata.db.QuestionsTranslate
+      .filter({
+        "language.short": language
+      })
+      .select([
+        "translated_text",
+        "question.question_id",
+        "question.effect",
+        "question.sort_order",
+        "question.test.test_id"
+      ])
       .getAll();
 
+    // Filter by test
+    const filteredQuestions = questionsWithTranslations.filter(q => q.question?.test?.test_id === testId);
+    
+    // Sort by sort_order
+    filteredQuestions.sort((a, b) => {
+      const orderA = a.question?.sort_order || 0;
+      const orderB = b.question?.sort_order || 0;
+      return orderA - orderB;
+    });
+
     // Check if questions were found
-    if (!questions || questions.length === 0) {
+    if (!filteredQuestions || filteredQuestions.length === 0) {
       const response: QuestionResponse = {
-        error: "No questions found for this test",
+        error: "No questions found for this test in the specified language",
       };
       return NextResponse.json(response, { status: 404 });
     }
 
-    // Transform the questions to match the expected format
-    const formattedQuestions = questions.map((q) => ({
-      id: q.question_id,
-      question: q.question,
-      effect: q.effect, // Use the effect values from the database
+    // Map to match the expected format
+    const formattedQuestions = filteredQuestions.map(qt => ({
+      id: qt.question?.question_id as number,
+      question: qt.translated_text as string,
+      effect: qt.question?.effect,
     }));
 
     const response: QuestionResponse = { questions: formattedQuestions };

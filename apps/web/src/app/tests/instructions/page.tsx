@@ -8,6 +8,7 @@ import { ArrowLeft, Brain, FileQuestion } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/i18n";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface TestInstructions {
   description: string;
@@ -19,6 +20,7 @@ export default function TestInstructions() {
   const searchParams = useSearchParams();
   const testId = searchParams.get("testId") || "1"; // Fallback to 1 for now
   const { t, tWithVars } = useTranslation();
+  const { language, fetchTests } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [instructions, setInstructions] = useState<TestInstructions>({
@@ -31,18 +33,31 @@ export default function TestInstructions() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const instructionsResponse = await fetch(
-          `/api/tests/${testId}/instructions`,
-        );
-        const instructionsData = await instructionsResponse.json();
+        // Fetch test data with translations
+        const testsResponse = await fetchTests();
+        const currentTest = testsResponse.tests?.find(test => test.testId.toString() === testId);
+        
+        if (currentTest) {
+          setInstructions({
+            description: currentTest.description,
+            total_questions: currentTest.totalQuestions,
+          });
+        } else {
+          // Fallback to direct API call if test not found in fetchTests response
+          const instructionsResponse = await fetch(
+            `/api/tests/${testId}/instructions?lang=${language}`,
+          );
+          const instructionsData = await instructionsResponse.json();
+          
+          setInstructions({
+            description: instructionsData.description,
+            total_questions: instructionsData.total_questions,
+          });
+        }
 
+        // Fetch user progress
         const progressResponse = await fetch(`/api/tests/${testId}/progress`);
         const progressData = await progressResponse.json();
-
-        setInstructions({
-          description: instructionsData.description,
-          total_questions: instructionsData.total_questions,
-        });
 
         if (progressData.answers) {
           const answeredCount = Object.keys(progressData.answers).length;
@@ -56,7 +71,7 @@ export default function TestInstructions() {
     };
 
     void fetchData();
-  }, [testId]);
+  }, [testId, language, fetchTests]);
 
   if (loading) {
     return <LoadingSpinner />;

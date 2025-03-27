@@ -99,7 +99,7 @@ export default function SignIn() {
         
         // Use a more robust approach to clear the session
         try {
-          const logoutResponse = await fetch("/api/auth/logout", {
+          await fetch("/api/auth/logout", {
             method: "POST",
             credentials: "include",
             headers: {
@@ -110,7 +110,7 @@ export default function SignIn() {
           });
           
           // Continue regardless of response status
-        } catch (logoutErr) {
+        } catch {
           // Fallback: Clear cookies directly
           const cookies = document.cookie.split(";");
           for (const cookie of cookies) {
@@ -121,7 +121,7 @@ export default function SignIn() {
             }
           }
         }
-      } catch (err) {
+      } catch {
         // Continue with authentication despite session clearing errors
       }
       
@@ -261,7 +261,7 @@ export default function SignIn() {
             try {
               const errorData = JSON.parse(errorText);
               errorMessage = errorData.message || errorData.error || errorMessage;
-            } catch (e) {
+            } catch {
               // Error parsing error response
             }
             
@@ -294,9 +294,9 @@ export default function SignIn() {
           
           // If we got here, the verification was successful
           break;
-        } catch (error) {
+        } catch (siweError) {
           if (siweRetryCount === siweMaxRetries) {
-            throw error;
+            throw siweError;
           }
           
           // Wait before retrying with increasing delay
@@ -399,7 +399,7 @@ export default function SignIn() {
           } else {
             router.push("/");
           }
-        } catch (error) {
+        } catch {
           // If something goes wrong after session creation, redirect to home
           
           // Restore language preference before redirect
@@ -421,7 +421,7 @@ export default function SignIn() {
           `/register?userId=${encodeURIComponent(userWalletAddress)}`,
         );
       }
-    } catch (error) {
+    } catch (authError) {
       // Always restore language preference on error
       const languagePreferenceAfterError = localStorage.getItem("language") || sessionStorage.getItem("language") || "en";
       if (languagePreferenceAfterError) {
@@ -431,8 +431,8 @@ export default function SignIn() {
       }
       
       if (
-        error instanceof Error &&
-        error.message === "Authentication cancelled"
+        authError instanceof Error &&
+        authError.message === "Authentication cancelled"
       ) {
         setError(t('signIn.errors.authCancelled'));
         return;
@@ -441,23 +441,23 @@ export default function SignIn() {
       let errorMessage = t('signIn.errors.authFailed');
       
       // Handle specific error types
-      if (error instanceof Error) {
-        if (error.message === "Invalid SIWE message format") {
+      if (authError instanceof Error) {
+        if (authError.message === "Invalid SIWE message format") {
           errorMessage = t('signIn.errors.invalidSiweFormat');
-        } else if (error.message.includes("Signature verification failed")) {
+        } else if (authError.message.includes("Signature verification failed")) {
           errorMessage = "Signature verification failed. Please try again.";
-        } else if (error.message.includes("Load failed")) {
+        } else if (authError.message.includes("Load failed")) {
           errorMessage = "Connection error. Please check your internet connection and try again.";
         } else {
-          errorMessage = error.message;
+          errorMessage = authError.message;
         }
-      } else if (typeof error === "string") {
-        errorMessage = error;
-      } else if (error && typeof error === "object") {
-        if ("message" in error) {
-          errorMessage = String(error.message);
-        } else if ("error" in error && typeof error.error === "object" && error.error && "message" in error.error) {
-          errorMessage = String(error.error.message);
+      } else if (typeof authError === "string") {
+        errorMessage = authError;
+      } else if (authError && typeof authError === "object") {
+        if ("message" in authError) {
+          errorMessage = String(authError.message);
+        } else if ("error" in authError && typeof authError.error === "object" && authError.error && "message" in authError.error) {
+          errorMessage = String(authError.error.message);
         }
       }
 

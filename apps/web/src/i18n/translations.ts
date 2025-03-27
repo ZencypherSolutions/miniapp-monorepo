@@ -21,7 +21,10 @@ export const translations = {
       membership: {
         premium: 'Premium Member',
         basic: 'Basic Member',
+        active: 'Active',
+        inactive: 'Inactive',
         expiryDate: 'Expiry Date',
+        nextPayment: 'Your next membership payment is scheduled for',
         noSubscription: 'No active subscription',
         upgrade: 'Upgrade to Awaken Pro',
         unlockFeatures: 'Unlock advanced features and exclusive content'
@@ -164,7 +167,15 @@ export const translations = {
       proDescription: 'Dive deeper into your ideological profile with Awaken Pro. Get comprehensive analysis and personalized insights.',
       upgradeToPro: 'Upgrade to Pro',
       shareAnalysis: 'Share Analysis',
-      perspective: 'Perspective'
+      perspective: 'Perspective',
+      estimatedIdeology: 'Estimated Ideology',
+      yourIdeology: 'Your Ideology',
+      closestPoliticalMatch: 'Your Closest Political Match',
+      noMatchAvailable: 'No match available',
+      basedOnAlignment: 'Based on your political alignment',
+      tagAndShare: 'Tag @MindVault & share your results!',
+      getFullExperience: 'Get the full experience on WorldApp',
+      ideologyNotAvailable: 'Ideology not available'
     },
     testSelection: {
       title: 'Available Tests',
@@ -263,6 +274,27 @@ export const translations = {
       levelProgress: 'Level progress',
       pointsToLevelUp: '{{points}}/{{maxPoints}} points to level up',
       dailyMotivation: 'Your daily motivation'
+    },
+    ideology: {
+      centrist: 'Centrist',
+      moderate: 'Moderate',
+      balanced: 'Balanced',
+      neutral: 'Neutral',
+      axis: {
+        equality: 'Equality',
+        markets: 'Markets',
+        liberty: 'Liberty',
+        authority: 'Authority',
+        nation: 'Nation',
+        globe: 'Globe',
+        tradition: 'Tradition',
+        progress: 'Progress'
+      }
+    },
+    publicFigures: {
+      elonmusk: 'Elon Musk',
+      joebiden: 'Joe Biden',
+      donaldtrump: 'Donald Trump'
     }
   },
   es: {
@@ -287,7 +319,10 @@ export const translations = {
       membership: {
         premium: 'Miembro Premium',
         basic: 'Miembro Básico',
+        active: 'Activo',
+        inactive: 'Inactivo',
         expiryDate: 'Fecha de Vencimiento',
+        nextPayment: 'Tu próximo pago de membresía está programado para',
         noSubscription: 'Sin suscripción activa',
         upgrade: 'Actualizar a Awaken Pro',
         unlockFeatures: 'Desbloquea funciones avanzadas y contenido exclusivo'
@@ -430,7 +465,15 @@ export const translations = {
       proDescription: 'Profundiza en tu perfil ideológico con Awaken Pro. Obtén análisis completos y perspectivas personalizadas.',
       upgradeToPro: 'Actualizar a Pro',
       shareAnalysis: 'Compartir Análisis',
-      perspective: 'Perspectiva'
+      perspective: 'Perspectiva',
+      estimatedIdeology: 'Ideología Estimada',
+      yourIdeology: 'Tu Ideología',
+      closestPoliticalMatch: 'Tu Coincidencia Política Más Cercana',
+      noMatchAvailable: 'Sin coincidencia disponible',
+      basedOnAlignment: 'Basado en tu alineación política',
+      tagAndShare: '¡Etiqueta a @MindVault y comparte tus resultados!',
+      getFullExperience: 'La experiencia completa en WorldApp',
+      ideologyNotAvailable: 'Ideología no disponible'
     },
     testSelection: {
       title: 'Pruebas Disponibles',
@@ -529,6 +572,27 @@ export const translations = {
       levelProgress: 'Progreso de nivel',
       pointsToLevelUp: '{{points}}/{{maxPoints}} puntos para subir de nivel',
       dailyMotivation: 'Tu motivación diaria'
+    },
+    ideology: {
+      centrist: 'Centrista',
+      moderate: 'Moderado',
+      balanced: 'Equilibrado',
+      neutral: 'Neutral',
+      axis: {
+        equality: 'Igualdad',
+        markets: 'Mercados',
+        liberty: 'Libertad',
+        authority: 'Autoridad',
+        nation: 'Nación',
+        globe: 'Global',
+        tradition: 'Tradición',
+        progress: 'Progreso'
+      }
+    },
+    publicFigures: {
+      elonmusk: 'Elon Musk',
+      joebiden: 'Joe Biden',
+      donaldtrump: 'Donald Trump'
     }
   }
 }; 
