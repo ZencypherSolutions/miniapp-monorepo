@@ -16,6 +16,15 @@ export const translations = {
       clear: 'Clear',
       share: 'Share'
     },
+    verification: {
+      verifying: 'Verifying...',
+      verifyWorldId: 'Verify your World ID',
+      worldAppNotInstalled: 'World App is not installed',
+      verificationFailed: 'Verification failed',
+      verificationCancelled: 'Verification was cancelled',
+      signatureVerificationFailed: 'Signature verification failed. Please try again.',
+      connectionError: 'Connection error. Please check your internet connection and try again.'
+    },
     settings: {
       title: 'Settings',
       membership: {
@@ -313,6 +322,15 @@ export const translations = {
       search: 'Buscar',
       clear: 'Limpiar',
       share: 'Compartir'
+    },
+    verification: {
+      verifying: 'Verificando...',
+      verifyWorldId: 'Verifica tu World ID',
+      worldAppNotInstalled: 'La aplicación World no está instalada',
+      verificationFailed: 'La verificación falló',
+      verificationCancelled: 'La verificación fue cancelada',
+      signatureVerificationFailed: 'Verificación de firma fallida. Por favor, inténtalo de nuevo.',
+      connectionError: 'Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.'
     },
     settings: {
       title: 'Configuración',

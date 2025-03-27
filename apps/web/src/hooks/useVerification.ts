@@ -4,6 +4,7 @@ import type { ISuccessResult, VerifyCommandInput } from "@worldcoin/minikit-js";
 import { MiniKit, VerificationLevel } from "@worldcoin/minikit-js";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "@/i18n";
 
 // Utility function to clear verification session data
 export function clearVerificationSession() {
@@ -61,6 +62,7 @@ export function useVerification() {
   const [error, setError] = useState<string | null>(null);
   const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
   const router = useRouter();
+  const { t } = useTranslation();
 
   const clearVerificationSession = useCallback(() => {
     // Save language preference before clearing session
@@ -203,7 +205,7 @@ export function useVerification() {
   const handleVerify = async () => {
     setError(null);
     if (!MiniKit.isInstalled()) {
-      setError("World App is not installed");
+      setError(t('verification.worldAppNotInstalled'));
       window.open("https://worldcoin.org/download-app", "_blank");
       return false;
     }
@@ -272,7 +274,7 @@ export function useVerification() {
 
       if (!finalPayload || finalPayload.status === "error") {
         console.error("World ID verification failed:", finalPayload);
-        setError("Verification failed");
+        setError(t('verification.verificationFailed'));
         return false;
       }
 
@@ -311,7 +313,7 @@ export function useVerification() {
         router.push("/sign-in");
       }
 
-      setError(verifyResponseJson.error || "Verification failed");
+      setError(verifyResponseJson.error || t('verification.verificationFailed'));
       return false;
     } catch (error) {
       console.error("Verification error:", error);
@@ -328,27 +330,35 @@ export function useVerification() {
         error instanceof Error &&
         error.message === "Verification cancelled"
       ) {
-        setError("Verification was cancelled");
+        setError(t('verification.verificationCancelled'));
       } else if (error instanceof Error) {
         if (error.message.includes("Signature verification failed")) {
-          setError("Signature verification failed. Please try again.");
+          setError(t('verification.signatureVerificationFailed'));
         } else if (error.message.includes("Load failed")) {
-          setError("Connection error. Please check your internet connection and try again.");
+          setError(t('verification.connectionError'));
         } else {
-          setError(error.message || "Verification failed");
+          setError(error.message || t('verification.verificationFailed'));
         }
       } else if (typeof error === "string") {
         setError(error);
       } else if (error && typeof error === "object") {
         if ("message" in error && typeof error.message === "string") {
-          setError(error.message);
+          setError(error.message as string);
         } else if ("error" in error && typeof error.error === "object" && error.error && "message" in error.error) {
-          setError(String(error.error.message));
+          // Use a proper type definition for the error object
+          type ErrorWithNestedMessage = {
+            error: {
+              message: string;
+              [key: string]: unknown;
+            };
+            [key: string]: unknown;
+          };
+          setError(String((error as ErrorWithNestedMessage).error.message));
         } else {
-          setError("Verification failed");
+          setError(t('verification.verificationFailed'));
         }
       } else {
-        setError("Verification failed");
+        setError(t('verification.verificationFailed'));
       }
       return false;
     } finally {
