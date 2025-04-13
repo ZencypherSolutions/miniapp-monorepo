@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, forwardRef } from 'react';
+import React, { useEffect, forwardRef, useRef } from 'react';
+import { useTranslation } from "@/i18n";
 
 const ResultsCanvas = forwardRef<HTMLCanvasElement, {
   econ: number;
@@ -11,6 +12,30 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
   ideology: string;
   onLoad?: () => void;
 }>(({ econ, dipl, govt, scty, closestMatch, ideology, onLoad }, ref) => {
+  // Get translations
+  const { t, language } = useTranslation();
+  
+  // Use a ref to track if we've already logged the debug info to prevent infinite loops
+  const hasLoggedRef = useRef(false);
+  
+  useEffect(() => {
+    // Only log once to prevent render loops
+    if (!hasLoggedRef.current) {
+      console.log('Canvas - Received props:');
+      console.log('  - closestMatch:', closestMatch);
+      console.log('  - ideology:', ideology);
+      console.log('  - language:', language);
+      hasLoggedRef.current = true;
+    }
+  }, [closestMatch, ideology, language]);
+
+  useEffect(() => {
+    // Reset the logged flag if key props change
+    if (closestMatch || ideology || language) {
+      hasLoggedRef.current = false;
+    }
+  }, [closestMatch, ideology, language]);
+
   useEffect(() => {
     if (typeof ref === 'function' || !ref?.current) return;
     
@@ -161,17 +186,17 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
       ctx.font = 'bold 80px Space Grotesk';
       ctx.fillText('MindVault', canvas.width / 2, 270);
       ctx.font = 'bold 60px Space Grotesk';
-      ctx.fillText('Political Compass', canvas.width / 2, 350);
+      ctx.fillText(t('results.title'), canvas.width / 2, 350);
 
       // Subtitle
       ctx.font = '500 36px Space Grotesk';
-      ctx.fillText('Discover Your Political Identity', canvas.width / 2, 460);
+      ctx.fillText(t('tests.instructions.title'), canvas.width / 2, 460);
 
       // Axis drawer
       const drawAxis = (
-        label: string,
-        leftLabel: string,
-        rightLabel: string,
+        key: string,
+        leftKey: string,
+        rightKey: string,
         rightValue: number,
         y: number,
         leftColor: string,
@@ -179,6 +204,11 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
         leftIcon: HTMLImageElement,
         rightIcon: HTMLImageElement
       ) => {
+        // Get translated labels
+        const label = t(`results.scores.${key}`);
+        const leftLabel = t(`ideology.axis.${leftKey}`);
+        const rightLabel = t(`ideology.axis.${rightKey}`);
+        
         const barWidth = canvas.width - 160;
         const barHeight = 80;
         const x = (canvas.width - barWidth) / 2;
@@ -202,7 +232,7 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
         const leftValue = 100 - rightValue;
         const meetingPoint = x + (barWidth * leftValue / 100);
 
-        // Left gradient
+        // Left gradient - use orange (FF9B45) for left side
         if (leftValue > 0) {
           const leftGradient = ctx.createLinearGradient(x, y, meetingPoint, y);
           leftGradient.addColorStop(0, '#FF9B45');
@@ -268,18 +298,18 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
         ctx.fillText(rightLabel, x + barWidth, y + barHeight + 35);
       };
 
-      // Draw the four axes
-      drawAxis('Economic Axis', 'Equality', 'Markets', econ, 550, '#FF9B45', '#40E0D0', icons.equality, icons.market);
-      drawAxis('Diplomatic Axis', 'Nation', 'Globe', dipl, 750, '#FFB347', '#45D1C5', icons.nation, icons.globe);
-      drawAxis('Government Axis', 'Authority', 'Liberty', govt, 950, '#FFA500', '#48D1C0', icons.authority, icons.liberty);
-      drawAxis('Societal Axis', 'Tradition', 'Progress', scty, 1150, '#FF8C00', '#43E0D0', icons.tradition, icons.progress);
+      // Draw the four axes with translation keys
+      drawAxis('economic', 'equality', 'markets', econ, 550, '#FF9B45', '#40E0D0', icons.equality, icons.market);
+      drawAxis('diplomatic', 'nation', 'globe', dipl, 750, '#FFB347', '#45D1C5', icons.nation, icons.globe);
+      drawAxis('civil', 'authority', 'liberty', govt, 950, '#FFA500', '#48D1C0', icons.authority, icons.liberty);
+      drawAxis('societal', 'tradition', 'progress', scty, 1150, '#FF8C00', '#43E0D0', icons.tradition, icons.progress);
 
       // Add spacing gap
       const gapHeight = 60;
       const boxHeight = 160; 
 
-      // Ideology text box
-      ctx.shadowColor = 'rgba(64, 224, 208, 0.2)';
+      // Ideology text box - Use orange accents
+      ctx.shadowColor = 'rgba(255, 150, 0, 0.2)'; // Orange shadow for ideology box
       ctx.shadowBlur = 20;
       const ideologyGradient = ctx.createLinearGradient(40, 1270 + gapHeight, canvas.width - 40, 1270 + gapHeight);
       ideologyGradient.addColorStop(0, '#1E3232');
@@ -288,7 +318,7 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
       roundRect(40, 1280 + gapHeight, canvas.width - 80, boxHeight, 30);
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(64, 224, 208, 0.2)';
+      ctx.strokeStyle = 'rgba(255, 150, 0, 0.2)'; // Orange border
       ctx.lineWidth = 2;
       roundRect(40, 1280 + gapHeight, canvas.width - 80, boxHeight, 30);
       ctx.stroke();
@@ -298,7 +328,7 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
       ctx.fillStyle = '#D1D5DB';
       ctx.font = '500 42px Space Grotesk';
       ctx.textAlign = 'center';
-      ctx.fillText('Your Ideology', canvas.width / 2, 1325 + gapHeight);
+      ctx.fillText(t('insights.yourIdeology'), canvas.width / 2, 1325 + gapHeight);
 
       // Ideology text
       ctx.shadowColor = 'rgba(255, 255, 255, 0.2)';
@@ -306,7 +336,7 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '600 60px Space Grotesk';
       ctx.textAlign = 'center';
-      ctx.fillText(ideology || 'Ideology not available', canvas.width / 2, 1390 + gapHeight);
+      ctx.fillText(ideology || t('insights.ideologyNotAvailable'), canvas.width / 2, 1390 + gapHeight);
 
       // Add spacing between boxes
       const boxSpacing = 30;
@@ -338,7 +368,7 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
       ctx.fillStyle = '#D1D5DB';
       ctx.font = '500 42px Space Grotesk';
       ctx.textAlign = 'center';
-      ctx.fillText('Your Closest Political Match', canvas.width / 2, matchBoxY + 45);
+      ctx.fillText(t('insights.closestPoliticalMatch'), canvas.width / 2, matchBoxY + 45);
 
       // Enhanced match name with stronger glow
       ctx.shadowColor = 'rgba(64, 224, 208, 0.3)';
@@ -346,13 +376,21 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '600 60px Space Grotesk';
       ctx.textAlign = 'center';
-      ctx.fillText(closestMatch, canvas.width / 2, matchBoxY + 110);
+
+      // Ensure closestMatch is properly displayed or fallback to a default message
+      const displayText = closestMatch && closestMatch !== 'undefined' && closestMatch.trim() !== '' 
+        ? closestMatch 
+        : t('insights.noMatchAvailable');
+
+      // Log the text being displayed
+      console.log('Canvas - Drawing match text:', displayText);
+      ctx.fillText(displayText, canvas.width / 2, matchBoxY + 110);
       
       // Add subtle subtitle
       ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(209, 213, 219, 0.8)';
       ctx.font = '500 32px Space Grotesk';
-      ctx.fillText('Based on your political alignment', canvas.width / 2, matchBoxY + 155);
+      ctx.fillText(t('insights.basedOnAlignment'), canvas.width / 2, matchBoxY + 155);
 
       // Footer (adjusted position based on new layout)
       const footerY = matchBoxY + matchBoxHeight + footerSpacing;
@@ -360,7 +398,7 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
       // Social text
       ctx.fillStyle = '#D1D5DB';
       ctx.font = '500 36px Space Grotesk';
-      ctx.fillText('Tag @MindVault & share your results!', canvas.width / 2, footerY);
+      ctx.fillText(t('insights.tagAndShare'), canvas.width / 2, footerY);
 
       // CTA button - adjusted position and size
       const buttonY = footerY + 30;
@@ -382,7 +420,7 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
       
       // Calculate vertical center of button for text
       const textY = buttonY + (buttonHeight / 2) + 10;
-      ctx.fillText('Get the full experience on WorldApp', canvas.width / 2, textY);
+      ctx.fillText(t('insights.getFullExperience'), canvas.width / 2, textY);
 
       // Call onLoad when drawing is complete
       onLoad?.();
@@ -396,7 +434,7 @@ const ResultsCanvas = forwardRef<HTMLCanvasElement, {
     };
 
     init().catch(console.error);
-  }, [econ, dipl, govt, scty, closestMatch, ideology, onLoad, ref]);
+  }, [econ, dipl, govt, scty, closestMatch, ideology, onLoad, ref, t, language]);
 
   return (
     <>

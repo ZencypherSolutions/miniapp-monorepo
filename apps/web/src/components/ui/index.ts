@@ -24,3 +24,5 @@ export * from './NotificationsToggle';
 export * from './ToggleSwitch';
 export * from './BackgroundEffect';
 export * from './InsightResultTag'; 
+export * from './InsightsHeader';
+export * from './InsightsList';

@@ -2563,6 +2563,8 @@ const DatabaseClient = buildClient();
 
 const defaultOptions = {
   databaseURL: "https://bitfalt-mmda85.us-east-1.xata.sh/db/MindVault-MiniApp",
+  apiKey: process.env.NEXT_PUBLIC_XATA_API_KEY,
+  branch: "main",
 };
 
 export class XataClient extends DatabaseClient<DatabaseSchema> {

@@ -200,7 +200,7 @@ export default function Register() {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           router.push("/welcome");
         }
-      } catch (_) {
+      } catch {
         // Even if verification fails, still try to redirect
         router.push("/welcome");
       }
