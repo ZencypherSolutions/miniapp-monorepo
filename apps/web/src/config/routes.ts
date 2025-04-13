@@ -18,6 +18,8 @@ export const routes = {
     user: '/api/user',
     tests: '/api/tests',
     insights: '/api/insights',
+    categories: '/api/categories',
+    ideologies: '/api/ideologies',
     verify: '/api/verify',
     wallet: '/api/wallet',
   },
@@ -47,6 +49,8 @@ export const api = {
   user: () => routes.api.user,
   tests: () => routes.api.tests,
   insights: () => routes.api.insights,
+  categories: () => routes.api.categories,
+  ideologies: () => routes.api.ideologies,
   verify: () => routes.api.verify,
   wallet: () => routes.api.wallet,
 } as const 

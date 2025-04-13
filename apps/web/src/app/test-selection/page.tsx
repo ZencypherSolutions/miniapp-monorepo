@@ -8,6 +8,7 @@ import { Brain } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/i18n";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Achievement {
   id: string;
@@ -34,16 +35,16 @@ export default function TestsPage() {
     achievements: [],
   });
   const { t } = useTranslation();
+  const { fetchTests } = useLanguage();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch test data
-        const response = await fetch("/api/tests");
-        const data = await response.json();
-
-        if (data.tests && data.tests.length > 0) {
-          const firstTest = data.tests[0];
+        // Fetch test data using the language context
+        const testsResponse = await fetchTests();
+        
+        if (testsResponse.tests && testsResponse.tests.length > 0) {
+          const firstTest = testsResponse.tests[0];
 
           // Fetch progress for this test
           const progressResponse = await fetch(
@@ -56,13 +57,14 @@ export default function TestsPage() {
             : 0;
 
           setTestData({
-            testId: firstTest.testId,
+            testId: firstTest.testId.toString(),
             title: firstTest.testName,
             totalQuestions: firstTest.totalQuestions || 0,
             answeredQuestions: answeredCount,
             achievements: firstTest.achievements || [],
           });
         } else {
+          console.error("No tests found");
         }
       } catch (error) {
         console.error("Error fetching test data:", error);
@@ -72,7 +74,7 @@ export default function TestsPage() {
     };
 
     void fetchData();
-  }, []);
+  }, [fetchTests]);
 
   const handleSearch = (query: string) => {
     if (query.toLowerCase().includes(testData.title.toLowerCase())) {

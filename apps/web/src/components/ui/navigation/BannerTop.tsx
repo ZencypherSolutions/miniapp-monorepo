@@ -2,11 +2,13 @@
 
 import { FilledButton } from "@/components/ui/buttons/FilledButton";
 import { useVerification } from "@/hooks";
+import { useTranslation } from "@/i18n";
 
 export function BannerTop() {
-  const { isVerifying, isVerified, isLoading, handleVerify } = useVerification()
+  const { isVerifying, isVerified, isLoading, handleVerify } = useVerification();
+  const { t } = useTranslation();
 
-  if (isLoading || isVerified) return null
+  if (isLoading || isVerified) return null;
 
   return (
     <div className="fixed top-0 left-0 right-0 bg-brand-tertiary z-50 px-4 py-2 flex flex-col items-center justify-center">
@@ -17,8 +19,8 @@ export function BannerTop() {
         onClick={handleVerify}
         disabled={isVerifying}
       >
-        {isVerifying ? 'Verifying...' : 'Verify your World ID'}
+        {isVerifying ? t('verification.verifying') : t('verification.verifyWorldId')}
       </FilledButton>
     </div>
-  )
+  );
 }

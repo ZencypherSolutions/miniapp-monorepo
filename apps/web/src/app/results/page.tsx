@@ -28,12 +28,12 @@ export default function ResultsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const response = await fetch("/api/tests");
+        const response = await fetch(`/api/tests?lang=${language}`);
         const data = await response.json();
 
         const transformedResults = data.tests.map((test: Test) => ({
@@ -47,21 +47,21 @@ export default function ResultsPage() {
 
         const comingSoonCards = [
           {
-            title: "Personality Test (Coming Soon)",
+            title: t('testSelection.personalityTest') + ` (${t('leaderboard.comingSoon')})`,
             backgroundColor: "#778BAD",
             iconBgColor: "#4A5A7A",
             Icon: Heart,
             isEnabled: false,
           },
           {
-            title: "Coming Soon",
+            title: t('leaderboard.comingSoon'),
             backgroundColor: "#DA9540",
             iconBgColor: "#A66B1E",
             Icon: Star,
             isEnabled: false,
           },
           {
-            title: "Coming Soon",
+            title: t('leaderboard.comingSoon'),
             backgroundColor: "#D87566",
             iconBgColor: "#A44C3D",
             Icon: Trophy,
@@ -78,10 +78,10 @@ export default function ResultsPage() {
     };
 
     fetchResults();
-  }, [t]);
+  }, [t, language]);
 
   const handleCardClick = (testId: string) => {
-    router.push(`/insights?testId=${testId}`);
+    router.push(`/insights?testId=${testId}&lang=${language}`);
   };
 
   if (loading) {

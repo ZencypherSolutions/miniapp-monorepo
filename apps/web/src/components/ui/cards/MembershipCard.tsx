@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "@/i18n";
+
 interface MembershipCardProps {
   expiryDate: string;
   isActive: boolean;
@@ -11,6 +13,8 @@ export function MembershipCard({
   isActive,
   cost,
 }: MembershipCardProps) {
+  const { t } = useTranslation();
+  
   return (
     <div className="w-full rounded-[30px] bg-brand-secondary p-6 shadow-[0px_4px_4px_rgba(0,0,0,0.25)]">
       <div className="mb-4 flex items-start justify-between">
@@ -19,13 +23,13 @@ export function MembershipCard({
         </h2>
         <div className="rounded-[20px] bg-brand-primary px-4 py-1 shadow">
           <span className="text-base font-bold text-white">
-            {isActive ? "Active" : "Inactive"}
+            {isActive ? t('settings.membership.active') : t('settings.membership.inactive')}
           </span>
         </div>
       </div>
 
       <p className="mb-4 text-sm font-bold text-white/80">
-        Your next membership payment is scheduled for {expiryDate}
+        {t('settings.membership.nextPayment')} {expiryDate}
       </p>
 
       <div className="flex justify-end">
